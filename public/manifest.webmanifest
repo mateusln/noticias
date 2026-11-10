@@ -1,0 +1,9 @@
+{
+  "name": "Notícias do dia",
+  "short_name": "Notícias",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f2f4f7",
+  "theme_color": "#14213d",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
