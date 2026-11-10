@@ -11,6 +11,11 @@ const FEEDS = [
   { source: 'CNN Brasil', url: 'https://www.cnnbrasil.com.br/feed/' },
   { source: 'Poder360', url: 'https://www.poder360.com.br/feed/' },
   { source: 'Valor', url: 'https://pox.globo.com/rss/valor' },
+  { source: 'Carta', url: 'https://www.cartacapital.com.br/feed/' },
+  { source: 'ICL', url: 'https://iclnoticias.com.br/feed/' },
+  { source: 'BBC', url: 'https://feeds.bbci.co.uk/portuguese/rss.xml' },
+  { source: 'Google', url: 'https://news.google.com/rss' },
+  
 ];
 
 const PER_FEED = 100;
@@ -41,7 +46,22 @@ const items = [];
 await Promise.all(
   FEEDS.map(async (f) => {
     try {
-      const feed = await parser.parseURL(f.url);
+      const res = await fetch(f.url, {
+        headers: { 'User-Agent': 'noticias-do-dia/1.0' },
+        signal: AbortSignal.timeout(15000),
+      });
+      const buf = await res.arrayBuffer();
+      const ctype = res.headers.get('content-type') || '';
+      const preview = new TextDecoder('ascii', { fatal: false }).decode(buf.slice(0, 200));
+      const isIso =
+        ctype.toLowerCase().includes('iso-8859-1') ||
+        ctype.toLowerCase().includes('latin1') ||
+        /encoding=["'](iso-8859-1|latin1|windows-1252)["']/i.test(preview);
+      let text = isIso ? new TextDecoder('iso-8859-1').decode(buf) : new TextDecoder('utf-8').decode(buf);
+      if (text.includes('<rss>') && !text.includes('<rss version')) {
+        text = text.replace('<rss>', '<rss version="2.0">');
+      }
+      const feed = await parser.parseString(text);
       feed.items.slice(0, PER_FEED).forEach((it, rank) => {
         const date = it.isoDate ? new Date(it.isoDate).getTime() : Date.now();
         if (!it.title || !it.link || date < cutoff) return;
