@@ -15,11 +15,15 @@ const FEEDS = [
   { source: 'ICL', url: 'https://iclnoticias.com.br/feed/' },
   { source: 'BBC', url: 'https://feeds.bbci.co.uk/portuguese/rss.xml' },
   { source: 'Google', url: 'https://news.google.com/rss' },
+  { source: 'GGN Nassif', url: 'https://jornalggn.com.br/feed/' },
+  { source: 'Gazeta do povo', url: 'https://www.gazetadopovo.com.br/feed/rss/ultimas-noticias.xml' },
+  { source: 'Revista Oeste', url: 'https://revistaoeste.com/feed/' },
+  { source: 'Estadão', url: 'https://www.estadao.com.br/arc/outboundfeeds/feeds/rss/sections/economia/?body=%7B%22layout%22:%22google-news%22%7D' },
   
 ];
 
 const PER_FEED = 100;
-const MAX_AGE_HOURS = 36;
+const MAX_AGE_HOURS = 24;
 const SIMILARITY = 0.45; // 0 a 1: quanto maior, mais rígido o agrupamento
 const OUT = 'public/news.json';
 
@@ -99,7 +103,9 @@ const stories = clusters
     const bestRank = Math.min(...c.items.map((i) => i.rank));
     // Pontuação: mais portais cobrindo pesa mais; depois posição no feed; depois recência
     const ageH = (Date.now() - newest) / 3600000;
-    const score = sources.length * 10 + (PER_FEED - bestRank) / 3 - ageH / 6;
+  // retira peso de recencia do artigo
+    // const score = sources.length * 10 + (PER_FEED - bestRank) / 3 - ageH / 24;
+    const score = sources.length;
     return {
       id: Buffer.from(lead.link).toString('base64url').slice(-16),
       title: lead.title,
