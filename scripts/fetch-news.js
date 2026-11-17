@@ -19,7 +19,6 @@ const FEEDS = [
   { source: 'Gazeta do povo', url: 'https://www.gazetadopovo.com.br/feed/rss/ultimas-noticias.xml' },
   { source: 'Revista Oeste', url: 'https://revistaoeste.com/feed/' },
   { source: 'Estadão', url: 'https://www.estadao.com.br/arc/outboundfeeds/feeds/rss/sections/economia/?body=%7B%22layout%22:%22google-news%22%7D' },
-  
 ];
 
 const PER_FEED = 100;
@@ -100,10 +99,10 @@ const stories = clusters
     const sources = [...bySource.values()];
     const lead = sources.slice().sort((a, b) => a.rank - b.rank)[0];
     const newest = Math.max(...c.items.map((i) => i.date));
-    const bestRank = Math.min(...c.items.map((i) => i.rank));
+    // const bestRank = Math.min(...c.items.map((i) => i.rank));
     // Pontuação: mais portais cobrindo pesa mais; depois posição no feed; depois recência
-    const ageH = (Date.now() - newest) / 3600000;
-  // retira peso de recencia do artigo
+    // const ageH = (Date.now() - newest) / 3600000;
+    // retira peso de recencia do artigo
     // const score = sources.length * 10 + (PER_FEED - bestRank) / 3 - ageH / 24;
     const score = sources.length;
     return {
