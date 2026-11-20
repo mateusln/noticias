@@ -184,7 +184,36 @@ header {
     font-size: 1.125rem;
   }
 
+  .sources-list {
+    gap: 14px;
+  }
+
+  .source-link {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    padding: 2px 0;
+  }
+
+  .source-name {
+    font-size: 0.725rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+  }
+
   .source-title {
-    display: none;
+    display: block;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    font-size: 0.875rem;
+    line-height: 1.38;
+    color: var(--text-primary);
+  }
+
+  .source-link:active {
+    opacity: 0.65;
   }
 }
