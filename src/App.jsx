@@ -51,7 +51,7 @@ export default function App() {
   return (
     <main className="container">
       <header>
-        <div className="brand">Síntese</div>
+        <div className="brand">Notícias</div>
         <h1 className="current-date">{currentDate}</h1>
       </header>
 
@@ -70,8 +70,7 @@ export default function App() {
       <ul className="news-list">
         {displayedStories.map((s) => {
           const isOpen = openIds.has(s.id);
-          const storyTime = s.date
-            ? new Date(s.date).toLocaleTimeString('pt-BR', {
+          const storyTime = s.date ? new Date(s.date).toLocaleTimeString('pt-BR', {
                 hour: '2-digit',
                 minute: '2-digit',
               })
@@ -112,9 +111,6 @@ export default function App() {
                         <span className="source-title" title={src.title || s.title}>
                           {src.title || s.title}
                         </span>
-                        {storyTime && (
-                          <span className="source-time">{storyTime}</span>
-                        )}
                       </a>
                     </li>
                   ))}

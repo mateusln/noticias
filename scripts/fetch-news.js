@@ -23,20 +23,74 @@ const FEEDS = [
 
 const PER_FEED = 100;
 const MAX_AGE_HOURS = 24;
-const SIMILARITY = 0.45; // 0 a 1: quanto maior, mais rígido o agrupamento
+const SIMILARITY = 0.23; // 0 a 1: quanto maior, mais rígido o agrupamento ponderado
 const OUT = 'public/news.json';
 
-const STOP = new Set('para como mais pelo pela pelos pelas sobre entre apos ainda depois contra desde sem sob essa esse esta este isso aquele tambem sera foram seus suas dele dela mesmo quando onde porque'.split(' '));
+const STOP = new Set(
+  'para como mais pelo pela pelos pelas sobre entre apos ainda depois contra desde sem sob essa esse esta este isso aquele tambem sera serao foram seus suas dele dela mesmo quando onde porque quem qual quais diz dizem deve devem pode podem veja entenda'.split(' ')
+);
+const COMMON_INSTITUTIONS = new Set([
+  'brasil', 'eua', 'governo', 'camara', 'senado', 'congresso', 'justica', 'policia', 'pf',
+]);
 
 const norm = (s) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-const tokens = (title) =>
-  new Set(norm(title).split(/[^a-z0-9]+/).filter((w) => w.length > 3 && !STOP.has(w)));
 
-function jaccard(a, b) {
-  if (!a.size || !b.size) return 0;
+// Extrai termos atribuindo pesos maiores para siglas e palavras com maiúsculas
+function extractTokens(title) {
+  const map = new Map();
+  const rawWords = title.split(/[^a-zA-ZÀ-ÿ0-9]+/).filter(Boolean);
+
+  rawWords.forEach((word, index) => {
+    const clean = norm(word);
+    if (!clean || STOP.has(clean)) return;
+
+    // Sigla: 2+ caracteres todos maiúsculos (ex: STF, ANP, MEC, PEC, PIB, TCU, etc.)
+    const isAcronym = word.length >= 2 && word === word.toUpperCase() && !/^\d+$/.test(word);
+    // Capitalizada: começa com maiúscula (ex: Vorcaro, Alcolumbre, Flávio, etc.)
+    const isCapitalized = /^[A-ZÁÉÍÓÚÂÊÔÃÕÇ][a-záéíóúâêôãõç]+/.test(word);
+
+    let weight = 1.0;
+    if (COMMON_INSTITUTIONS.has(clean)) {
+      weight = 1.2; // Entidades institucionais muito frequentes no noticiário têm peso balanceado
+    } else if (isAcronym) {
+      weight = 3.0; // Siglas específicas recebem peso máximo
+    } else if (isCapitalized) {
+      weight = index === 0 ? 1.8 : 2.5; // Nomes próprios / termos com maiúscula
+    } else if (clean.length <= 3) {
+      return; // Palavras comuns curtas (<= 3 letras) continuam descartadas
+    }
+
+    if (weight > (map.get(clean) || 0)) {
+      map.set(clean, weight);
+    }
+  });
+
+  return map;
+}
+
+// Similaridade de Jaccard Ponderada: soma dos mínimos / soma dos máximos
+function weightedJaccard(mapA, mapB) {
+  if (!mapA.size || !mapB.size) return 0;
   let inter = 0;
-  for (const w of a) if (b.has(w)) inter++;
-  return inter / (a.size + b.size - inter);
+  let union = 0;
+
+  for (const [key, weightA] of mapA.entries()) {
+    if (mapB.has(key)) {
+      const weightB = mapB.get(key);
+      inter += Math.min(weightA, weightB);
+      union += Math.max(weightA, weightB);
+    } else {
+      union += weightA;
+    }
+  }
+
+  for (const [key, weightB] of mapB.entries()) {
+    if (!mapA.has(key)) {
+      union += weightB;
+    }
+  }
+
+  return union === 0 ? 0 : inter / union;
 }
 
 const clean = (html = '') =>
@@ -75,7 +129,7 @@ await Promise.all(
           rank, // posição no feed: quanto menor, mais destaque na redação
           summary: clean(it.contentSnippet || it.content || '').slice(0, 220),
           source: f.source,
-          tokens: tokens(it.title),
+          tokens: extractTokens(it.title),
         });
       });
     } catch (e) {
@@ -84,12 +138,25 @@ await Promise.all(
   })
 );
 
-// Agrupamento simples: cada item entra no primeiro grupo parecido, ou cria um novo
+if (items.length === 0) {
+  console.log('Nenhum item coletado dos feeds. Mantendo arquivo anterior.');
+  process.exit(0);
+}
+
+// Agrupamento: cada item entra no primeiro grupo parecido ponderado, ou cria um novo
 const clusters = [];
 for (const it of items.sort((a, b) => a.rank - b.rank)) {
-  const hit = clusters.find((c) => jaccard(c.tokens, it.tokens) >= SIMILARITY);
-  if (hit) hit.items.push(it);
-  else clusters.push({ tokens: it.tokens, items: [it] });
+  const hit = clusters.find((c) => weightedJaccard(c.tokens, it.tokens) >= SIMILARITY);
+  if (hit) {
+    hit.items.push(it);
+    for (const [key, weight] of it.tokens.entries()) {
+      if (weight > (hit.tokens.get(key) || 0)) {
+        hit.tokens.set(key, weight);
+      }
+    }
+  } else {
+    clusters.push({ tokens: new Map(it.tokens), items: [it] });
+  }
 }
 
 const stories = clusters
@@ -106,7 +173,7 @@ const stories = clusters
     // const score = sources.length * 10 + (PER_FEED - bestRank) / 3 - ageH / 24;
     const score = sources.length;
     return {
-      id: Buffer.from(lead.link).toString('base64url').slice(-16),
+      id: Buffer.from(lead.link).toString('base64url').slice(-50),
       title: lead.title,
       summary: lead.summary,
       link: lead.link,
