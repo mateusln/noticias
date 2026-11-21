@@ -33,6 +33,24 @@ export default function App() {
     return dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
   }, []);
 
+  const lastUpdated = useMemo(() => {
+    if (!data?.updatedAt) return '';
+    const date = new Date(data.updatedAt);
+    if (Number.isNaN(date.getTime())) return '';
+    const time = date.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    if (date.toDateString() === new Date().toDateString()) {
+      return `Última atualização às ${time}`;
+    }
+    const day = date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+    });
+    return `Última atualização em ${day} às ${time}`;
+  }, [data?.updatedAt]);
+
   const toggleItem = (id) => {
     setOpenIds((prev) => {
       const next = new Set(prev);
@@ -129,6 +147,12 @@ export default function App() {
         >
           Carregar mais notícias ({stories.length - visibleCount} restantes)
         </button>
+      )}
+
+      {lastUpdated && (
+        <footer className="footer">
+          <time dateTime={data.updatedAt}>{lastUpdated}</time>
+        </footer>
       )}
     </main>
   );

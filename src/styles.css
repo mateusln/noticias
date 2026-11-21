@@ -175,6 +175,18 @@ header {
   color: var(--text-primary);
 }
 
+.footer {
+  padding-top: 32px;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.load-more-btn + .footer {
+  padding-top: 8px;
+}
+
 @media (max-width: 480px) {
   .container {
     padding: 40px 20px 64px;

@@ -23,7 +23,7 @@ const FEEDS = [
 
 const PER_FEED = 100;
 const MAX_AGE_HOURS = 24;
-const SIMILARITY = 0.23; // 0 a 1: quanto maior, mais rígido o agrupamento ponderado
+const SIMILARITY = 0.13; // 0 a 1: quanto maior, mais rígido o agrupamento ponderado
 const OUT = 'public/news.json';
 
 const STOP = new Set(
